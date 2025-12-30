@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consignment Label Generator</title>
+    <meta name="description" content="Generate Flipkart-style consignment labels instantly. pure static tool.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- CDN Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- We might use html2canvas for preview-perfect PDF if needed, but starting with pure jsPDF as requested for specific text control -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1>Consignment Label Generator</h1>
+            <p>Create professional logistics labels instantly.</p>
+        </header>
+
+        <main class="main-content">
+            <!-- Input Form Section -->
+            <section class="form-section">
+                <div class="card">
+                    <h2>Label Details</h2>
+                    <form id="labelForm">
+                        <!-- Product Details -->
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="model">Model</label>
+                                <input type="text" id="model" value="[Model Name]">
+                            </div>
+                        </div>
+
+                        <div class="form-group-row two-col">
+                            <div class="form-group">
+                                <label for="brand">Brand</label>
+                                <input type="text" id="brand" value="[Brand Name]">
+                            </div>
+                            <div class="form-group">
+                                <label for="color">Color</label>
+                                <input type="text" id="color" value="[Color]">
+                            </div>
+                        </div>
+
+                        <div class="form-group-row two-col">
+                            <div class="form-group">
+                                <label for="netQty">Net Quantity</label>
+                                <input type="text" id="netQty" value="[Net Qty]">
+                            </div>
+                            <div class="form-group">
+                                <label for="size">Size</label>
+                                <input type="text" id="size" value="[Size]">
+                            </div>
+                        </div>
+
+                        <!-- Dimensions -->
+                        <div class="form-group-row">
+                            <label>Dimensions (cm)</label>
+                            <div class="dims-inputs">
+                                <div class="input-wrapper"><span class="prefix">L</span><input type="number" id="dimL"
+                                        value="0"></div>
+                                <div class="input-wrapper"><span class="prefix">B</span><input type="number" id="dimB"
+                                        value="0"></div>
+                                <div class="input-wrapper"><span class="prefix">H</span><input type="number" id="dimH"
+                                        value="0"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group-row two-col">
+                            <div class="form-group">
+                                <label for="mrp">MRP (Rs.)</label>
+                                <input type="text" id="mrp" value="[Price]">
+                            </div>
+                            <div class="form-group">
+                                <label for="genericName">Generic Name</label>
+                                <input type="text" id="genericName" value="[Generic Name]">
+                            </div>
+                        </div>
+
+                        <!-- Manufacture Date -->
+                        <div class="form-group-row">
+                            <label>Month & Year of Mfg</label>
+                            <div class="date-inputs">
+                                <select id="mfgMonth">
+                                    <option value="Jan" selected>Jan</option>
+                                    <option value="Feb">Feb</option>
+                                    <option value="Mar">Mar</option>
+                                    <option value="Apr">Apr</option>
+                                    <option value="May">May</option>
+                                    <option value="Jun">Jun</option>
+                                    <option value="Jul">Jul</option>
+                                    <option value="Aug">Aug</option>
+                                    <option value="Sep">Sep</option>
+                                    <option value="Oct">Oct</option>
+                                    <option value="Nov">Nov</option>
+                                    <option value="Dec">Dec</option>
+                                </select>
+                                <select id="mfgYear">
+                                    <option value="23">2023</option>
+                                    <option value="24">2024</option>
+                                    <option value="25" selected>2025</option>
+                                    <option value="26">2026</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="mfgBy">Manufactured/Marketed By</label>
+                            <textarea id="mfgBy" rows="2">[Manufacturer Details]</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="careDetails">Customer Care Details</label>
+                            <input type="text" id="careDetails" value="[Customer Care Info]">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fsn">EAN/FSN/Barcode Value</label>
+                            <input type="text" id="fsn" value="[Barcode Value]">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="footerDesc">Bottom Description</label>
+                            <input type="text" id="footerDesc" value="[Product Description]">
+                        </div>
+                    </form>
+
+                    <!-- Optional Fields Selection -->
+                    <div class="form-group-row">
+                        <label>Show/Hide Fields</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" id="chkModel" checked> Model</label>
+                            <label><input type="checkbox" id="chkColor" checked> Color</label>
+                            <label><input type="checkbox" id="chkBrand" checked> Brand</label>
+                            <label><input type="checkbox" id="chkQty" checked> Net Qty</label>
+                            <label><input type="checkbox" id="chkSize" checked> Size</label>
+                            <label><input type="checkbox" id="chkDims" checked> Dimensions</label>
+                            <label><input type="checkbox" id="chkMrp" checked> MRP</label>
+                            <label><input type="checkbox" id="chkGeneric" checked> Generic Name</label>
+                        </div>
+                    </div>
+
+                    <!-- PDF Settings -->
+                    <div class="card" style="margin-top: 1rem; background: #f8fafc; border: 1px solid #e2e8f0;">
+                        <h3 style="font-size: 1rem; margin-bottom: 0.5rem; font-weight: 600;">PDF Format</h3>
+
+                        <div class="toggle-container">
+                            <input type="radio" name="pdfFormat" id="fmtSquare" value="square" checked>
+                            <label for="fmtSquare" class="toggle-btn">
+                                <span class="icon">■</span>
+                                <div class="text">
+                                    <span class="title">Square Page</span>
+                                    <span class="subtitle">4" x 4" PDF</span>
+                                </div>
+                            </label>
+
+                            <input type="radio" name="pdfFormat" id="fmtRect" value="rect">
+                            <label for="fmtRect" class="toggle-btn">
+                                <span class="icon">kb</span>
+                                <div class="text">
+                                    <span class="title">Double Stacked</span>
+                                    <span class="subtitle">2 Labels on 4"x8" Page</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button id="downloadPdfBtn" class="primary-btn">Download PDF</button>
+                        <button id="printBtn" class="secondary-btn">Print</button>
+                        <button id="clearBtn" class="secondary-btn" style="color: #ef4444; border-color: #fca5a5;">Clear
+                            Form</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Preview Section -->
+            <section class="preview-section">
+                <div class="preview-header">
+                    <h2>Live Preview</h2>
+                    <span class="badge">Paper Size: 4x6" (Approx)</span>
+                </div>
+
+                <div class="preview-container">
+                    <div id="previewWrapper" class="preview-page-wrapper">
+                        <!-- This specific structure mimics the table layout of the PDF -->
+                        <div id="labelPreview" class="label-preview">
+                            <table class="label-table">
+                                <tbody>
+                                    <tr>
+                                        <td class="label-key">Model</td>
+                                        <td class="label-val" id="prevModel"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label-key">Color</td>
+                                        <td class="label-val" id="prevColor"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label-key">Brand</td>
+                                        <td class="label-val" id="prevBrand"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label-key">Net Quantity</td>
+                                        <td class="label-val" id="prevQty"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label-key">Size</td>
+                                        <td class="label-val" id="prevSize"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label-key">Dimensions</td>
+                                        <td class="label-val" id="prevDims"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label-key">MRP</td>
+                                        <td class="label-val" id="prevMrp"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label-key">Generic name</td>
+                                        <td class="label-val" id="prevGeneric"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label-key">Month & Year of<br>manufacturing</td>
+                                        <td class="label-val align-right" id="prevDate"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label-key">Manufactured by/<br>marketed by</td>
+                                        <td class="label-val" id="prevMfg"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label-key">Customer care details</td>
+                                        <td class="label-val" id="prevCare"></td>
+                                    </tr>
+                                    <!-- Barcode Section -->
+                                    <tr class="barcode-row">
+                                        <td class="label-key no-border-right">EAN/FSN/LID/ Barcode</td>
+                                        <td class="label-val barcode-cell">
+                                            <svg id="barcode"></svg>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" class="label-val full-width" id="prevFsnCode"></td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" class="label-val full-width" id="prevFooter"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Visual Clone for Double View -->
+                        <div id="labelClone" class="label-preview label-clone hidden-clone"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
