@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 format: "CODE128",
                 lineColor: "#000",
                 width: 2,
-                height: 40,
+                height: 100,
                 displayValue: false,
                 margin: 0
             });
@@ -173,62 +173,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- PDF Generation ---
     document.getElementById('downloadPdfBtn').addEventListener('click', async () => {
-        const { jsPDF } = window.jspdf;
+        const btn = document.getElementById('downloadPdfBtn');
+        const originalText = btn.textContent;
+        btn.textContent = "Generating...";
+        btn.disabled = true;
 
-        // Determine selected format
-        let selectedFormat = 'square';
-        for (const rb of pdfFormats) {
-            if (rb.checked) {
-                selectedFormat = rb.value;
-                break;
+        try {
+            const { jsPDF } = window.jspdf;
+
+            // Determine selected format
+            let selectedFormat = 'square';
+            for (const rb of pdfFormats) {
+                if (rb.checked) {
+                    selectedFormat = rb.value;
+                    break;
+                }
             }
-        }
 
-        // Generate the high-res image of the label
-        // We capture only ONE square label source
-        const element = document.getElementById('labelPreview');
-        const canvas = await html2canvas(element, {
-            scale: 4,
-            backgroundColor: "#ffffff",
-            logging: false
-        });
-        const imgData = canvas.toDataURL('image/png');
-
-        let doc;
-
-        // Dimensions in mm
-        // 4 inch = 101.6 mm
-        const labelSize = 101.6;
-
-        if (selectedFormat === 'square') {
-            // Square PDF (4x4)
-            // STRICTLY 101.6 x 101.6
-            doc = new jsPDF({
-                orientation: 'p',
-                unit: 'mm',
-                format: [labelSize, labelSize]
+            // Generate the high-res image of the label
+            // We capture only ONE square label source
+            const element = document.getElementById('labelPreview');
+            const canvas = await html2canvas(element, {
+                scale: 2, // Reduced from 4 for better stability
+                backgroundColor: "#ffffff",
+                logging: false,
+                useCORS: true // Attempt to handle external assets if any
             });
-            // Fill page exactly
-            doc.addImage(imgData, 'PNG', 0, 0, labelSize, labelSize);
-        } else {
-            // "Double Stacked" PDF with a gap
-            const gap = 5; // 5mm
-            const totalHeight = (labelSize * 2) + gap;
+            const imgData = canvas.toDataURL('image/png');
 
-            doc = new jsPDF({
-                orientation: 'p',
-                unit: 'mm',
-                format: [labelSize, totalHeight]
-            });
+            let doc;
 
-            // Label 1 (Top)
-            doc.addImage(imgData, 'PNG', 0, 0, labelSize, labelSize);
+            // Dimensions in mm
+            // 4 inch = 101.6 mm
+            const labelSize = 101.6;
 
-            // Label 2 (Bottom)
-            doc.addImage(imgData, 'PNG', 0, labelSize + gap, labelSize, labelSize);
+            if (selectedFormat === 'square') {
+                // Square PDF (4x4)
+                // STRICTLY 101.6 x 101.6
+                doc = new jsPDF({
+                    orientation: 'p',
+                    unit: 'mm',
+                    format: [labelSize, labelSize]
+                });
+                // Fill page exactly
+                doc.addImage(imgData, 'PNG', 0, 0, labelSize, labelSize);
+            } else {
+                // "Double Stacked" PDF with a gap
+                const gap = 5; // 5mm
+                const totalHeight = (labelSize * 2) + gap;
+
+                doc = new jsPDF({
+                    orientation: 'p',
+                    unit: 'mm',
+                    format: [labelSize, totalHeight]
+                });
+
+                // Label 1 (Top)
+                doc.addImage(imgData, 'PNG', 0, 0, labelSize, labelSize);
+
+                // Label 2 (Bottom)
+                doc.addImage(imgData, 'PNG', 0, labelSize + gap, labelSize, labelSize);
+            }
+
+            const fileName = inputs.fsn.value ? `Label_${inputs.fsn.value}.pdf` : 'Label.pdf';
+            doc.save(fileName);
+        } catch (error) {
+            console.error("PDF Generation Error:", error);
+            alert("Failed to generate PDF. Check console for details.");
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
         }
-
-        doc.save(`Label_${inputs.fsn.value}.pdf`);
     });
 
     // --- Print Function ---
